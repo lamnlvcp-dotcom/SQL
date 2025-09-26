@@ -51,3 +51,39 @@ where 1=1
  and base.DocCode = 'HD'
  and base.CustomerCode = 'B0294'
  and base.DocDate between '2024-01-01' and '2024-12-31'
+
+ ;
+
+
+ select sum(case when base.PayType = 2 then -1*base.Amount else base.Amount end)
+
+from
+(Select pd.*
+--,pdd.*
+--,pdd_2.*
+--,pdd.Amount
+--,pdd.Stt
+--,pdd.Stt_Cd_Htt
+--,pdd_2.Amount
+--,pdd_2.Stt
+--,pdd_2.Stt_Cd_Htt
+--,pdd.ParentId
+
+,ad.IsActive  as ad_is_active
+,ad.Posted
+,ad.DocStatus
+
+from B7R2_VCP_TH.dbo.B30PayDoc pd
+	left join B7R2_VCP_TH.dbo.B30AccDoc ad on ad.Stt = pd.Stt and ad.CustomerCode = pd.CustomerCode
+--	left join B7R2_VCP_TH.dbo.B30PayDocDetail pdd on pd.Id = pdd.ParentId
+--	left join B7R2_VCP_TH.dbo.B30PayDocDetail pdd_2 on pd.Stt = pdd_2.Stt_Cd_Htt and pd.CustomerCode = pdd_2.CustomerCode
+
+where 1=1
+-- and pd.Stt in ('B010000000146355','B010000000146391')
+--		and DocCode= 'PK'
+--		and DocNo= '00003123'
+		and pd.CustomerCode= 'M0089'
+--		and pd.Year = 2025
+		and isnull(ad.IsActive,1) = 1
+		and pd.IsOpenBalance = 0
+)base
