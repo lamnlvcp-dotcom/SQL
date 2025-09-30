@@ -52,6 +52,8 @@ and isnull(base.CustomerCode,'') <> ''
 GROUP BY base.CustomerCode
 ;
 
+
+
 Select sum(case when base2.account_group = '331' and base2.PayType = 1 then base2.Amount
 		  when base2.account_group = '331' and base2.PayType = 2 then (-1)*base2.Amount
 		  when base2.account_group = '131' and base2.PayType = 1 then (-1)*base2.Amount
