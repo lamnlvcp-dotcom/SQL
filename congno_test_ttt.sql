@@ -13,6 +13,8 @@ Select base2.CustomerCode
 		  when base2.account_group = '131' and base2.PayType = 1 then (-1)*isnull(base2.pdd_amount,0)
 		  when base2.account_group = '131' and base2.PayType = 2 then isnull(base2.pdd_amount,0)
 		  else isnull(base2.pdd_amount,0) end) as total_pdd
+
+
 ,sum(isnull(base2.pdd_amount_extra,0)) as pdd_amount_extra
 
 ,sum(case when base2.account_group = '331' and base2.PayType = 1 then isnull(base2.pdd_amount,0)
@@ -97,7 +99,8 @@ from
 	)base1
 		left join (Select pd.Stt
 					,pd.DocCode
-					,pd.DocDate
+					,case when pd.Stt = 'B0100000463962DK' then '2024-12-30' -- exceptional case chung tu C24TCP14457 co record DK bi lech 1 ngay (2024-12-31) so voi ngay dung (2024-12-31)
+						else pd.DocDate end as DocDate
 					,pd.DocNo
 					,pd.Description
 					,pd.Account
@@ -115,7 +118,8 @@ from
 					where 1=1
 					and pd.IsActive = 1
 					and pd.Stt  like '%DK%'
-					and year(pd.DocDate) >= 2018
+					and pd.Stt not in ('B0100000288691DK','B0100000402427DK','B0100000350074DK','B0100000178532DK') -- exceptional cases / clean data
+				--	and year(pd.DocDate) >= 2018
 				--	and ((year(pd.DocDate) >= 2018 and isnull(pd.DocNo,'') <> '') OR (year(pd.DocDate) < 2018 and isnull(pd.DocNo,'') = ''))
 
 					GROUP BY pd.Stt
@@ -128,7 +132,7 @@ from
 							,pd.CustomerCode
 							,pd.Amount
 							
-					)bdk on bdk.DocCode = base1.DocCode and bdk.DocNo = base1.DocNo and bdk.CustomerCode = base1.CustomerCode and base1.DocDate = bdk.DocDate
+					)bdk on bdk.DocCode = base1.DocCode and bdk.DocNo = base1.DocNo and bdk.CustomerCode = base1.CustomerCode and bdk.Stt <> base1.Stt and base1.DocDate = bdk.DocDate
 
 GROUP BY base1.Stt,base1.TransCode,base1.DocCode,base1.DocDate,base1.DocNo,base1.DocDateAcc,base1.DocNoAcc,base1.Description,base1.PayType,base1.IsPrepayment,base1.Account,base1.CustomerCode,base1.DueDate,base1.CurrencyCode,base1.ExchangeRate,base1.Amount,base1.Year,base1.AtchDocDate,base1.AtchDocNo,base1.IsActive,base1.CreatedAt,base1.account_group,base1.ad_is_active,base1.Posted,base1.DocStatus,base1.doc_year,base1.pdd_amount
 
@@ -136,7 +140,7 @@ GROUP BY base1.Stt,base1.TransCode,base1.DocCode,base1.DocDate,base1.DocNo,base1
 )base2
 
 Where 1=1
- and base2.CustomerCode = 'B0120'
+  and base2.CustomerCode = 'B0545'
 
 GROUP BY base2.CustomerCode
 ,base2.account_group
@@ -147,10 +151,9 @@ ORDER BY base2.CustomerCode, base2.PayType ASC
 
 ;
 
-
-
 Select base2.Stt
 ,base2.DocDate
+,base2.DocCode
 ,base2.PayType
 ,base2.CustomerCode
 ,base2.DocNo
@@ -161,7 +164,10 @@ Select base2.Stt
 
 from
 (Select base1.*
-,sum(bdk.pdd_amount_for_dk) as pdd_amount_extra
+,sum(case when base1.Stt = 'B010000000225460' then 341999910 -- exceptional case: C24TCP692 co C24TCP1093 dieu chinh giam
+		  when base1.Stt = 'B010000000096229' then 	33926407 -- exceptional case: 0005961 bi nham thanh 0005916 trong B0100000178513DK
+		  when base1.Stt = 'B010000000096491' then 17999999 - 7852403 -- exceptional case: phieu goc da thanh toan 7852403, phieu DK B0100000178531DK lai thanh toan full
+		else bdk.pdd_amount_for_dk end) as pdd_amount_extra
 
 from
 	(select base.Stt
@@ -231,7 +237,8 @@ from
 	)base1
 		left join (Select pd.Stt
 					,pd.DocCode
-					,pd.DocDate
+					,case when pd.Stt = 'B0100000463962DK' then '2024-12-30' -- exceptional case chung tu C24TCP14457 co record DK bi lech 1 ngay (2024-12-31) so voi ngay dung (2024-12-31)
+						else pd.DocDate end as DocDate
 					,pd.DocNo
 					,pd.Description
 					,pd.Account
@@ -245,12 +252,16 @@ from
 				
 					from B7R2_VCP_TH.dbo.B30PayDoc pd 
 						left join B7R2_VCP_TH.dbo.B30PayDocDetail pdd on pd.Stt = pdd.Stt_Cd_Htt and pd.CustomerCode = pdd.CustomerCode and pdd.IsActive = 1 and (pdd.Account LIKE '131%' OR pdd.Account LIKE '331%') and pd.Account = pdd.Account
+
+					--	Select * from B7R2_VCP_TH.dbo.B30PayDocDetail pdd where pdd.Stt_Cd_Htt = 'A0100000001426DK'
 								
 					where 1=1
 					and pd.IsActive = 1
 					and pd.Stt  like '%DK%'
-					and pd.CustomerCode = 'B0120'
-					--and year(pd.DocDate) >= 2018
+					and pd.Stt not in ('B0100000288691DK','B0100000402427DK','B0100000350074DK','B0100000178532DK') -- exceptional cases / clean data
+				--	and pd.CustomerCode = 'B0001'
+				--	and pd.Stt = 'A0100000001426DK'
+					-- and year(pd.DocDate) >= 2018
 					-- and ((year(pd.DocDate) >= 2018 and isnull(pd.DocNo,'') <> '') OR (year(pd.DocDate) < 2018 and isnull(pd.DocNo,'') = ''))
 
 					GROUP BY pd.Stt
@@ -263,7 +274,7 @@ from
 							,pd.CustomerCode
 							,pd.Amount
 							
-					)bdk on bdk.DocCode = base1.DocCode and bdk.DocNo = base1.DocNo and bdk.CustomerCode = base1.CustomerCode and base1.DocDate = bdk.DocDate
+					)bdk on bdk.DocCode = base1.DocCode and bdk.DocNo = base1.DocNo and bdk.CustomerCode = base1.CustomerCode  and bdk.Stt <> base1.Stt and base1.DocDate = bdk.DocDate
 
 GROUP BY base1.Stt,base1.TransCode,base1.DocCode,base1.DocDate,base1.DocNo,base1.DocDateAcc,base1.DocNoAcc,base1.Description,base1.PayType,base1.IsPrepayment,base1.Account,base1.CustomerCode,base1.DueDate,base1.CurrencyCode,base1.ExchangeRate,base1.Amount,base1.Year,base1.AtchDocDate,base1.AtchDocNo,base1.IsActive,base1.CreatedAt,base1.account_group,base1.ad_is_active,base1.Posted,base1.DocStatus,base1.doc_year,base1.pdd_amount
 
@@ -271,15 +282,15 @@ GROUP BY base1.Stt,base1.TransCode,base1.DocCode,base1.DocDate,base1.DocNo,base1
 )base2
 
 Where 1=1
-and base2.CustomerCode = 'B0120'
+and base2.CustomerCode = 'B0545'
 -- and base2.DocNo = 'CP/20E0000765'
 and base2.PayType = 1
-and base2.Stt = 'B0100000010121DK'
--- and base2.Amount - isnull(base2.pdd_amount,0)  - isnull(base2.pdd_amount_extra,0) <> 0
+-- and base2.Stt = 'B0100000010121DK'
+-- and base2.DocCode = 'HD'
+ and base2.Amount - isnull(base2.pdd_amount,0)  - isnull(base2.pdd_amount_extra,0) <> 0
 
 
 ORDER BY base2.PayType ASC
-
 
 ;
 
@@ -355,16 +366,17 @@ from
 	and isnull(base.CustomerCode,'') <> ''
 	and base.Stt not in ('B010000000177365')
 
-	and base.CustomerCode = 'B0120'
+	and base.CustomerCode = 'B0225'
 	
-	and base.DocNo = '0000430'
+	and base.DocNo = 'C24TCP14457'
 
 	GROUP BY base.Stt,base.TransCode,base.DocCode,base.DocDate,base.DocNo,base.DocDateAcc,base.DocNoAcc,base.Description,base.PayType,base.IsPrepayment,base.Account,base.CustomerCode,base.DueDate,base.CurrencyCode,base.ExchangeRate,base.Amount,base.Year,base.AtchDocDate,base.AtchDocNo,base.IsActive,base.CreatedAt,base.account_group,base.ad_is_active,base.Posted,base.DocStatus,base.doc_year
 
 	)base1
 		left join (Select pd.Stt
 					,pd.DocCode
-					,pd.DocDate
+					,case when pd.Stt = 'B0100000463962DK' then '2024-12-30' -- exceptional case chung tu C24TCP14457 co record DK bi lech 1 ngay (2024-12-31) so voi ngay dung (2024-12-31)
+						else pd.DocDate end as DocDate
 					,pd.DocNo
 					,pd.Description
 					,pd.Account
@@ -383,7 +395,8 @@ from
 					where 1=1
 					and pd.IsActive = 1
 					and pd.Stt  like '%DK%'
-					and year(pd.DocDate) >= 2018
+					and pd.Stt not in ('B0100000288691DK','B0100000402427DK','B0100000350074DK','B0100000178532DK') -- exceptional cases / clean data
+					--and year(pd.DocDate) >= 2018
 
 					GROUP BY pd.Stt
 							,pd.DocCode
@@ -395,7 +408,7 @@ from
 							,pd.CustomerCode
 							,pd.Amount
 							
-					)bdk on bdk.DocCode = base1.DocCode and bdk.DocNo = base1.DocNo and bdk.CustomerCode = base1.CustomerCode and base1.DocDate = bdk.DocDate
+					)bdk on bdk.DocCode = base1.DocCode and bdk.DocNo = base1.DocNo and bdk.CustomerCode = base1.CustomerCode and base1.DocDate = bdk.DocDate and bdk.Stt <> base1.Stt
 
 -- GROUP BY base1.Stt,base1.TransCode,base1.DocCode,base1.DocDate,base1.DocNo,base1.DocDateAcc,base1.DocNoAcc,base1.Description,base1.PayType,base1.IsPrepayment,base1.Account,base1.CustomerCode,base1.DueDate,base1.CurrencyCode,base1.ExchangeRate,base1.Amount,base1.Year,base1.AtchDocDate,base1.AtchDocNo,base1.IsActive,base1.CreatedAt,base1.account_group,base1.ad_is_active,base1.Posted,base1.DocStatus,base1.doc_year,base1.pdd_amount
 
@@ -412,10 +425,11 @@ and base1.DocNo = '0000430'
 
 ;
 
-
 Select *
 
 from B7R2_VCP_TH.dbo.B30PayDoc pd
 
 where  1=1
-and pd.Stt in ('A0100000001645DK','A0100000001646DK')
+and pd.DocNo in ('0006127')
+-- and pd.CustomerCode = 'B0541'
+
